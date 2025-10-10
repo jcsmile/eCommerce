@@ -2,7 +2,6 @@ package com.ecommerce.productservice.service;
 
 import com.ecommerce.productservice.event.ProductStockEvent;
 import com.ecommerce.productservice.repo.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -13,7 +12,7 @@ public class KafkaConsumerService {
     private final ProductRepository productRepository;
     private final KafkaProducerService kafkaProducerService;
 
-    KafkaConsumerService(ProductRepository productRepository, KafkaProducerService kafkaProducerService) {
+    public KafkaConsumerService(ProductRepository productRepository, KafkaProducerService kafkaProducerService) {
         this.productRepository = productRepository;
         this.kafkaProducerService = kafkaProducerService;
     }

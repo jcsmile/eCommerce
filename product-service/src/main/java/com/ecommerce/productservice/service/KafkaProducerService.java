@@ -4,11 +4,8 @@ package com.ecommerce.productservice.service;
 import com.ecommerce.productservice.event.ProductStockEvent;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 public class KafkaProducerService {
     private static final org.slf4j.Logger log
             = org.slf4j.LoggerFactory.getLogger(KafkaProducerService.class);
@@ -16,7 +13,7 @@ public class KafkaProducerService {
     private final KafkaTemplate<String, ProductStockEvent> kafkaTemplate;
     private static final String STOCK_TOPIC = "product-stock-updated";
 
-    KafkaProducerService (KafkaTemplate<String, ProductStockEvent> kafkaTemplate){
+    public KafkaProducerService (KafkaTemplate<String, ProductStockEvent> kafkaTemplate){
         this.kafkaTemplate = kafkaTemplate;
     }
 
