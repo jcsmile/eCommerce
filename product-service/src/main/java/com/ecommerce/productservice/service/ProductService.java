@@ -7,7 +7,7 @@ import com.ecommerce.productservice.customexception.ValidationException;
 import com.ecommerce.productservice.domain.Product;
 import com.ecommerce.productservice.dto.ProductDto;
 import com.ecommerce.productservice.repo.ProductRepository;
-import lombok.RequiredArgsConstructor;
+import com.ecommerce.productservice.service.KafkaProducerService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -17,9 +17,11 @@ import reactor.core.publisher.Mono;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final KafkaProducerService kafkaProducerService;
 
-    ProductService (ProductRepository productRepository) {
+    ProductService (ProductRepository productRepository, KafkaProducerService kafkaProducerService) {
         this.productRepository = productRepository;
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     public Flux<ProductDto> getAll(int page, int size) {
@@ -53,6 +55,8 @@ public class ProductService {
         }
 
         return productRepository.save(entity)
+                .doOnSuccess(saved ->
+                        kafkaProducerService.sendStockUpdateEvent(saved.getId(), saved.getStock(), "CREATE"))
                 .map(ProductDto::fromEntity)
                 .onErrorMap(DataIntegrityViolationException.class,
                         e -> new DuplicateProductException("A product with the same name or unique constraint already exists"))
@@ -64,7 +68,22 @@ public class ProductService {
 
     public Mono<Void> delete(Long id) {
         return productRepository.findById(id)
-                .flatMap(product -> productRepository.delete(product))
+
+                .flatMap(product -> productRepository.deleteById(id)
+                                            .doOnSuccess(v ->
+                                                    kafkaProducerService.sendStockUpdateEvent(product.getId(), 0, "DELETE")))
                 .switchIfEmpty(Mono.error(new ProductNotFoundException(id)));
+    }
+
+    public Mono<ProductDto> updateStock(Long id, int newStock) {
+        return productRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ProductNotFoundException(id)))
+                .flatMap(existing -> {
+                    existing.setStock(newStock);
+                    return productRepository.save(existing)
+                            .doOnSuccess(saved ->
+                                    kafkaProducerService.sendStockUpdateEvent(saved.getId(), saved.getStock(), "UPDATE"));
+                })
+                .map(ProductDto::fromEntity);
     }
 }
