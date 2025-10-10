@@ -1,0 +1,14 @@
+openapi: 3.0.1
+info:
+  title: User Service API
+  version: 0.1.0
+paths:
+  /api/users/register:
+    post:
+      summary: Register a new user
+  /api/users/login:
+    post:
+      summary: User login
+  /api/users/{id}:
+    get:
+      summary: Get user profile by id
