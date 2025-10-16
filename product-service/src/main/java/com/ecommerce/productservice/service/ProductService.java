@@ -1,13 +1,14 @@
 package com.ecommerce.productservice.service;
 
-import com.ecommerce.productservice.customexception.DuplicateProductException;
-import com.ecommerce.productservice.customexception.ProductCreationException;
-import com.ecommerce.productservice.customexception.ProductNotFoundException;
-import com.ecommerce.productservice.customexception.ValidationException;
+import com.ecommerce.productservice.customexception.*;
 import com.ecommerce.productservice.domain.Product;
 import com.ecommerce.productservice.dto.ProductDto;
 import com.ecommerce.productservice.repo.ProductRepository;
 import com.ecommerce.productservice.service.KafkaProducerService;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -32,6 +33,10 @@ public class ProductService {
                 .map(ProductDto::fromEntity);
     }
 
+    @CircuitBreaker(name = "productServiceCB", fallbackMethod = "fallbackGetProductById")
+    @Retry(name = "productServiceCB")
+    @RateLimiter(name = "productServiceCB")
+    @Bulkhead(name = "productServiceCB",type = Bulkhead.Type.THREADPOOL)
     public Mono<ProductDto> getById(Long id) {
         return productRepository.findById(id).map(ProductDto::fromEntity);
     }
@@ -40,6 +45,10 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(keyword).map(ProductDto::fromEntity);
     }
 
+    @CircuitBreaker(name = "productServiceCB", fallbackMethod = "fallbackCreate")
+    @Retry(name = "productServiceCB")
+    @RateLimiter(name = "productServiceCB")
+    @Bulkhead(name = "productServiceCB",type = Bulkhead.Type.THREADPOOL)
     public Mono<ProductDto> create(ProductDto dto) {
         Product entity = new Product(dto.getId()
                 ,dto.getName()
@@ -85,5 +94,22 @@ public class ProductService {
                                     kafkaProducerService.sendStockUpdateEvent(saved.getId(), saved.getStock(), "UPDATE"));
                 })
                 .map(ProductDto::fromEntity);
+    }
+
+    // Fallbacks (must have same return type)
+    private Mono<ProductDto> fallbackGetProductById(Long id, Throwable t) {
+        Product p = new Product(null,
+                "Unavailable",
+                "Service degraded",
+                "N/A",
+                0.0,
+                0,
+                null);
+        return Mono.just(ProductDto.fromEntity(p));
+    }
+
+    private Mono<ProductDto> fallbackCreate(Product product, Throwable ex) {
+        return Mono.error(new ServiceUnavailableException(
+                "ProductService temporarily unavailable: " + ex.getMessage()));
     }
 }
