@@ -10,7 +10,7 @@ public class KafkaProducerService {
     private static final org.slf4j.Logger log
             = org.slf4j.LoggerFactory.getLogger(KafkaProducerService.class);
 
-    private final KafkaTemplate<String, ProductStockEvent> kafkaTemplate;
+    private KafkaTemplate<String, ProductStockEvent> kafkaTemplate;
     private static final String STOCK_TOPIC = "product-stock-updated";
 
     public KafkaProducerService (KafkaTemplate<String, ProductStockEvent> kafkaTemplate){

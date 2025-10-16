@@ -17,7 +17,9 @@ public class KafkaConsumerService {
         this.kafkaProducerService = kafkaProducerService;
     }
 
-    @KafkaListener(topics = "payment-success-events", groupId = "product-service-group")
+    @KafkaListener(topics = "payment-success-events",
+                    groupId = "product-service-group",
+                    containerFactory = "productStockEventKafkaListenerContainerFactory")
     public void handlePaymentSuccess(ProductStockEvent event) {
         // Assume "action" = "SOLD"
         Long productId = event.getProductId();
@@ -26,7 +28,7 @@ public class KafkaConsumerService {
                     product.setStock(Math.max(0, product.getStock() - 1));
                     return productRepository.save(product)
                             .doOnSuccess(saved ->
-                                    kafkaProducerService.sendStockUpdateEvent(saved.getId(), saved.getStock(), "SOLD"));
+                                    kafkaProducerService.sendStockUpdateEvent(saved.getId(), saved.getStock(), "UPDATE"));
                 })
                 .onErrorResume(e -> Mono.empty()) // prevent crash
                 .subscribe();
