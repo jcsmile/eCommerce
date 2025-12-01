@@ -15,6 +15,10 @@ import org.springframework.kafka.support.serializer.JsonDeserializer;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Configuration class for Kafka settings in the Product Service.
+ * Provides consumer factory and listener container factory for ProductStockEvent.
+ */
 @Configuration
 public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")

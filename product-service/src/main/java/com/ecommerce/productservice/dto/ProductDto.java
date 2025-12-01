@@ -6,6 +6,17 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.*;
 
+/**
+ * Data Transfer Object for Product.
+ * <p>
+ * Business rules:
+ * 1. Used to transfer product data between layers
+ * 2. Contains product details for API responses
+ * 3. Supports conversion from entity
+ *
+ * @author JackyChen
+ * @since 2025-04-01
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -61,6 +72,17 @@ public class ProductDto {
         this.imageUrl = imageUrl;
     }
 
+    /**
+     * Converts a Product entity to ProductDto.
+     * <p>
+     * Business rules:
+     * 1. Maps all fields from entity to DTO
+     *
+     * @param p the Product entity
+     * @return the ProductDto
+     * @author JackyChen
+     * @since 2025-04-01
+     */
     public static ProductDto fromEntity(Product p) {
         ProductDto dto = new ProductDto();
         dto.id = p.getId();

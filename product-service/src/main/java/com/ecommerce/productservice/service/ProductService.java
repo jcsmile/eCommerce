@@ -14,17 +14,34 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service class for managing products.
+ * Provides business logic for product operations including CRUD, search, and stock management.
+ */
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
     private final KafkaProducerService kafkaProducerService;
 
+    /**
+     * Constructor for ProductService.
+     *
+     * @param productRepository the product repository
+     * @param kafkaProducerService the Kafka producer service
+     */
     ProductService (ProductRepository productRepository, KafkaProducerService kafkaProducerService) {
         this.productRepository = productRepository;
         this.kafkaProducerService = kafkaProducerService;
     }
 
+    /**
+     * Retrieves all products with pagination.
+     *
+     * @param page the page number (0-based)
+     * @param size the page size
+     * @return a Flux of ProductDto
+     */
     public Flux<ProductDto> getAll(int page, int size) {
         int skip =  page * size;
         return productRepository.findAll()
@@ -96,6 +113,15 @@ public class ProductService {
                 .map(ProductDto::fromEntity);
     }
 
+    public Mono<Void> reserveStock(Long productId, int quantity) {
+        return productRepository.reserveStock(productId, quantity)
+                .flatMap(rows -> {
+                    if (rows == 0) {
+                        return Mono.error(new IllegalStateException("Not enough stock"));
+                    }
+                    return Mono.empty();
+                });
+    }
     // Fallbacks (must have same return type)
     private Mono<ProductDto> fallbackGetProductById(Long id, Throwable t) {
         Product p = new Product(null,
